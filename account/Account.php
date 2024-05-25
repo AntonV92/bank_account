@@ -120,4 +120,12 @@ final class Account
             throw new \Exception("No currency available");
         }
     }
+
+    /**
+     * @return array
+     */
+    public function getAvailableCurrencies(): array
+    {
+        return array_keys($this->balance);
+    }
 }
