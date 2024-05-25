@@ -59,5 +59,34 @@ class AccountTest extends TestCase
         $this->assertEquals(8500, $account->getBalance());
         $this->assertEquals(114.2, $account->getBalance(new UsdCurrency()));
         $this->assertEquals(112.5, $account->getBalance(new EurCurrency()));
+
+        UsdCurrency::setExchangeRate(new RubCurrency(), 100);
+        EurCurrency::setExchangeRate(new RubCurrency(), 150);
+
+        $this->assertEquals(13500.0, $account->getBalance());
+
+        $account->setMainCurrency(new EurCurrency());
+        $this->assertEquals(112.5, $account->getBalance());
+    }
+
+    public function testConvertRubToUsd()
+    {
+        $account = new Account();
+        $account->addCurrency(new UsdCurrency());
+        $account->addCurrency(new RubCurrency());
+
+        $rub = new RubCurrency();
+        $rub->addCurrentValue(100);
+
+        $account->addFunds($rub);
+
+        $account->convert($rub->addCurrentValue(70), new UsdCurrency());
+
+        $rub = new RubCurrency();
+        $rub->addCurrentValue(30);
+
+        $account->removeFunds($rub);
+
+        $this->assertEquals(1.00, $account->getBalance(new UsdCurrency()));
     }
 }

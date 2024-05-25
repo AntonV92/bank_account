@@ -128,4 +128,20 @@ final class Account
     {
         return array_keys($this->balance);
     }
+
+    /**
+     * @param CurrencyInterface $from
+     * @param CurrencyInterface $to
+     * @return void
+     * @throws \Exception
+     */
+    public function convert(CurrencyInterface $from, CurrencyInterface $to): void
+    {
+        if ($this->balance[$from->getCode()] < $from->getCurrentValue()) {
+            throw new \Exception("Not enough funds to convert");
+        }
+
+        $this->balance[$from->getCode()] -= $from->getCurrentValue();
+        $this->balance[$to->getCode()] += $from->getCurrentValue() / $to::getExchangeRate($from);
+    }
 }
