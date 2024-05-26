@@ -40,11 +40,12 @@ final class Account
      */
     public function setMainCurrency(CurrencyInterface $currency): void
     {
+        $code = $currency->getCode();
         // сохраняем при необходимости в хранилище
-        if (array_key_exists($currency->getCode(), $this->balance)) {
+        if (array_key_exists($code, $this->balance)) {
             $this->mainCurrency = $currency;
         } else {
-            throw new \Exception("No currency available for this account");
+            throw new \Exception("Currency $code not available for this account");
         }
     }
 
@@ -78,7 +79,7 @@ final class Account
                 continue;
             } elseif (!array_key_exists($balanceCurrency->getCode(), $this->balance)) {
                 // если идет запрос баланса для несуществующей валюты
-                throw new \Exception("No currency account available for " . $balanceCurrency::class);
+                throw new \Exception("No currency account available for " . $balanceCurrency->getCode());
             }
             $factory = new CurrenciesFactory($code);
             $result += $factory->getCurrency()::getExchangeRate($balanceCurrency) * $amount;
@@ -98,7 +99,7 @@ final class Account
         if (array_key_exists($code, $this->balance)) {
             $this->balance[$code] += $currency->getCurrentValue();
         } else {
-            throw new \Exception("No currency available");
+            throw new \Exception("Currency $code not available for this account");
         }
     }
 
@@ -117,7 +118,7 @@ final class Account
             }
             $this->balance[$code] -= $currency->getCurrentValue();
         } else {
-            throw new \Exception("No currency available");
+            throw new \Exception("Currency $code not available for this account");
         }
     }
 
@@ -137,8 +138,13 @@ final class Account
      */
     public function convert(CurrencyInterface $from, CurrencyInterface $to): void
     {
-        if ($this->balance[$from->getCode()] < $from->getCurrentValue()) {
-            throw new \Exception("Not enough funds to convert");
+        switch (true) {
+            case $this->balance[$from->getCode()] < $from->getCurrentValue():
+                throw new \Exception("Not enough funds to convert");
+            case !array_key_exists($from->getCode(), $this->balance):
+                throw new \Exception($from->getCode() . " currency not available to convert from");
+            case !array_key_exists($to->getCode(), $this->balance):
+                throw new \Exception($to->getCode() . " currency not available to convert");
         }
 
         $this->balance[$from->getCode()] -= $from->getCurrentValue();

@@ -132,4 +132,81 @@ class AccountTest extends TestCase
 
         $this->assertEquals(8200, $account->getBalance());
     }
+
+    public function testNotEnoughFunds()
+    {
+        $account = new Account();
+        $account->addCurrency(new UsdCurrency());
+
+        $usd = new UsdCurrency();
+        $usd->addCurrentValue(10);
+
+        $account->addFunds($usd);
+
+        $this->expectExceptionMessage("Not enough funds");
+
+        $usd->addCurrentValue(11);
+        $account->removeFunds($usd);
+    }
+
+    public function testSetUnavailableCurrency()
+    {
+        $account = new Account();
+        $account->addCurrency(new UsdCurrency());
+
+        $eur = new EurCurrency();
+        $code = $eur->getCode();
+
+        $this->expectExceptionMessage("Currency $code not available for this account");
+        $account->setMainCurrency($eur);
+    }
+
+    public function testBalanceEmptyCurrency()
+    {
+        $account = new Account();
+        $account->addCurrency(new UsdCurrency());
+
+        $usd = new UsdCurrency();
+        $usd->addCurrentValue(50);
+
+        $eur = new EurCurrency();
+
+        $this->expectExceptionMessage("No currency account available for " . $eur->getCode());
+        $this->assertEquals(50, $account->getBalance($eur));
+    }
+
+    public function testAddFundsUnavailableCurrency()
+    {
+        $account = new Account();
+        $account->addCurrency(new UsdCurrency());
+
+        $eur = new EurCurrency();
+        $eur->addCurrentValue(50);
+        $code = $eur->getCode();
+
+        $this->expectExceptionMessage("Currency $code not available for this account");
+        $account->addFunds($eur);
+    }
+
+    public function testConvertIncorrect()
+    {
+        $account = new Account();
+        $usd = new UsdCurrency();
+
+        $account->addCurrency($usd);
+
+        $usd->addCurrentValue(10);
+        $account->addFunds($usd);
+
+        $this->expectExceptionMessage("Not enough funds to convert");
+        $account->convert($usd->addCurrentValue(15), new RubCurrency());
+
+        $rub = new RubCurrency();
+
+        $this->expectExceptionMessage($rub->getCode() . " currency not available to convert from");
+        $account->convert($rub, $usd);
+
+        $this->expectExceptionMessage($rub->getCode() . " currency not available to convert");
+        $account->convert($usd, $rub);
+    }
 }
