@@ -67,6 +67,9 @@ class AccountTest extends TestCase
 
         $account->setMainCurrency(new EurCurrency());
         $this->assertEquals(112.5, $account->getBalance());
+
+        EurCurrency::setExchangeRate(new RubCurrency(), 120);
+        $this->assertEquals(112.5, $account->getBalance());
     }
 
     public function testConvertRubToUsd()
@@ -87,6 +90,46 @@ class AccountTest extends TestCase
 
         $account->removeFunds($rub);
 
-        $this->assertEquals(1.00, $account->getBalance(new UsdCurrency()));
+        $this->assertEquals(0.994, $account->getBalance());
+    }
+
+    public function testDisableMainCurrency()
+    {
+        $account = new Account();
+        $account->addCurrency(new UsdCurrency());
+        $account->addCurrency(new RubCurrency());
+
+        $this->expectExceptionMessage("Cannot disable main currency");
+        $account->disableCurrency(new UsdCurrency());
+    }
+
+    public function testDisableCurrency()
+    {
+        $account = new Account();
+        $account->addCurrency(new UsdCurrency());
+        $account->addCurrency(new RubCurrency());
+        $account->addCurrency(new EurCurrency());
+
+        $usd = new UsdCurrency();
+        $usd->addCurrentValue(50);
+
+        $eur = new EurCurrency();
+        $eur->addCurrentValue(50);
+
+        $rub = new RubCurrency();
+        $rub->addCurrentValue(700);
+
+        $account->addFunds($usd);
+        $account->addFunds($eur);
+        $account->addFunds($rub);
+
+        $account->setMainCurrency(new RubCurrency());
+
+        $this->assertEquals(8200, $account->getBalance());
+
+        $account->disableCurrency(new EurCurrency());
+        $account->disableCurrency(new UsdCurrency());
+
+        $this->assertEquals(8200, $account->getBalance());
     }
 }

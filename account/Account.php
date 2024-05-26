@@ -142,6 +142,25 @@ final class Account
         }
 
         $this->balance[$from->getCode()] -= $from->getCurrentValue();
-        $this->balance[$to->getCode()] += $from->getCurrentValue() / $to::getExchangeRate($from);
+        $this->balance[$to->getCode()] += $from->getCurrentValue() * $from::getExchangeRate($to);
+    }
+
+    /**
+     * @param CurrencyInterface $currency
+     * @return void
+     * @throws \Exception
+     */
+    public function disableCurrency(CurrencyInterface $currency): void
+    {
+        $code = $currency->getCode();
+        $mainCurr = $this->mainCurrency;
+        if ($code == $mainCurr->getCode()) {
+            throw new \Exception("Cannot disable main currency");
+        }
+
+        $disabledCurrBalance = $this->balance[$code];
+
+        $this->convert($currency->addCurrentValue($disabledCurrBalance), $mainCurr);
+        unset($this->balance[$code]);
     }
 }
